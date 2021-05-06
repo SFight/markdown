@@ -95,4 +95,11 @@ flush privileges;
   
   * 解压`tar -xzvf canal.adapter-1.1.4.tar.gz`
   
-  * 
+  * 下载[canal.deployer-1.1.4.tar.gz]()
+  
+  * **注意：配置数据库的日志的时候可能存在找不到log问题，需要通过如下代码来更正**
+  
+  * ```shell
+    flush logs;
+    show master status;
+    ```

@@ -345,6 +345,9 @@ GET /canal_user/_search
 > ```shell
 > show variables like 'log_bin';
 > show variables like 'binlog_format';
+> show variables like 'log_bin_trust_function_creators'
+> 
+> set global log_bin_trust_function_creators=1;
 > 
 > # 修改my.conf
 > [mysqld]  
@@ -364,3 +367,52 @@ GET /canal_user/_search
 ```shell
 ./bin/elasticsearch-plugin install https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v7.12.0/elasticsearch-analysis-ik-7.12.0.zip
 ```
+
+## 七、docker中环境问题
+
+* 外网访问需要修改elasticsearch的`network.host: 0.0.0.0` ，同时修改`cluster.initial_master_nodes: ["elasticsearch"]` 此时会报内存不够的异常，使用如下参数修改：
+
+```shell
+sysctl -w vm.max_map_count=262144 
+sysctl -a|grep vm.max_map_count # 设置完成后可以通过该命令查看是否设置成功
+```
+
+此时在容器中会报read-only file错误，在启动的时候增加`--privileged` 参数解决问题。
+
+* kibana外网访问，修改`server.host: "0.0.0.0"` 
+
+参考地址：[来自于同事的docker使用过程中的一些记录 - js.yeyong - 博客园](https://www.cnblogs.com/yeyong/p/12518168.html)
+
+## 八、分词安装
+
+```shell
+# IK分词
+bin/elasticsearch-plugin install https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v6.3.0/elasticsearch-analysis-ik-6.3.0.zip
+# PinYin分词
+bin/elasticsearch-plugin install https://github.com/medcl/elasticsearch-analysis-pinyin/releases/download/v6.8.14/elasticsearch-analysis-pinyin-6.8.14.zip
+```
+
+* ik分词的ik_max_word存在问题
+
+```shell
+startOffset must be non-negative, and endOffset must be >= startOffset, and offsets must not go backwards startOffset=15,endOffset=16,lastStartOffset=16 for field 'title'"
+"properties" : {
+"title" : {
+"type" : "text",
+"analyzer" : "ik_max_word",
+"fields" : {
+"keyword" : {
+"type" : "keyword"
+}
+}
+}
+}
+
+elasticsearch 和ik版本皆为6.8.1
+```
+
+> **解决方案**
+> 
+> 目前不使用`ik_max_word` ，后期看是否需要更新
+> 
+> 参考地址：[ik分词器ik_max_word startOffset must be non-negative, and endOffset must be &gt;= startOffset, and offsets must not go backwards startOffset=15,endOffset=16,lastStartOffset=16 for field &#39;title&#39;&quot; · Issue #714 · medcl/elasticsearch-analysis-ik · GitHub](https://github.com/medcl/elasticsearch-analysis-ik/issues/714)
